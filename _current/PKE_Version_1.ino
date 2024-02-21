@@ -5,15 +5,19 @@
   currently included in this version (as of v1)
 
   TODO
-    - Adjust start up animation
-    - Create GB Logo 16x16 (In Progress ln 62)
     - Implement Button Controls of Stepper Motor
     - Create Scanning Animation/Page
     - EMF Functionality
-    -Integrated 9v battery
     - HARDWARE = Open Step Motor area for air flow / add open vents
-    - HARDWARE = solder currently 'taped' connections for more secure power flow
     - ground wire to board for Motor Controller
+
+
+COMPLETE
+    - Adjust start up order (Complete)
+    - Create GB Logo 16x16 (Complete)
+    -Integrated 9v battery (Completeish)
+    - HARDWARE = solder currently 'taped' connections for more secure power flow (Complete)
+    
 
 
 
@@ -87,46 +91,43 @@ static const unsigned char PROGMEM logo_bmp[] =
 
 void setup() {
 
-
-
-  
-  myStepper.setSpeed(5);
-  Serial.begin(115200);
-  myStepper.step(1000);
-  delay(1000);
-  myStepper.step(-1000);
-
-  delay(1000);
-
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+    //Step 1: Screen voltage loop
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3v interally (IE over Serial)
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
-  }
+  };
 
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-  display.display();
+//Step 2: Display Adafruit and Ghostbusters Logo
+  display.display();//Should display Adafruit Industries Logo
   delay(2000); // Pause for 2 seconds
 
   // Clear the buffer
   display.clearDisplay();
-
-  // Draw a single pixel in white
-  display.drawPixel(10, 10, SSD1306_WHITE);
-
-  // Show the display buffer on the screen. You MUST call display() after
-  // drawing commands to make them visible on screen!
-  display.display();
-  delay(2000);
+  
+  //Draw GB Logo Bitmap
   testdrawbitmap();
   delay(2000);
 
-  // display.display() is NOT necessary after every single drawing command,
-  // unless that's what you want...rather, you can batch up a bunch of
-  // drawing operations and then update the screen all at once by calling
-  // display.display(). These examples demonstrate both approaches...
+
+
+//Step 3: Test PKE Wings (Up a little under half of a full rotation, and then back the same amount)
+  myStepper.setSpeed(6);//Speed of Stepper Motor, Currently a little slow at 5
+  Serial.begin(115200); // Initialize Serial (USB to IDE Monitor) at Baud Speed 115200
+  myStepper.step(1000); // Extend Arms about 75%
+  delay(500);
+  myStepper.step(1000); //Retract Arms to 0ish
+  delay(2000);
+
+//Step 4: Text Example (need a fake "status" printout)
+    
+//Step 5: Animation Example of Lines
+
+//Step 6: "Status Update" Text
+
+
+//Step 7 MAIN LOOP: Pre version 2, example animation of main screen with selection info at bottom. Version 2 will have EMF readings instead of example data/loop
+
 
   display.clearDisplay();
 
@@ -135,6 +136,9 @@ void setup() {
 void loop() {
   testdrawline();      // Draw many lines
 }
+
+
+// Classes and Internal...stuff...idk.
 
 void testdrawline() {
   int16_t i;
