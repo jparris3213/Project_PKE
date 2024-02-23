@@ -40,6 +40,10 @@ const int stepsPerRevolution = 2048;
 #define IN3 5
 #define IN4 17
 
+#define PIN_ANTENNA 27
+#define CHECK_DELAY 1000
+#define lmillis() ((long)millis())
+
 // Initialize Stepper Motor
 Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 
@@ -47,7 +51,6 @@ Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 #define LOGO_HEIGHT   64
 #define LOGO_WIDTH    58
@@ -91,6 +94,7 @@ static const unsigned char PROGMEM logo_bmp[] =
 
 void setup() {
 
+  pinMode(PIN_ANTENNA, INPUT);
     //Step 1: Screen voltage loop
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3v interally (IE over Serial)
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -112,12 +116,13 @@ void setup() {
 
 
 //Step 3: Test PKE Wings (Up a little under half of a full rotation, and then back the same amount)
-  myStepper.setSpeed(6);//Speed of Stepper Motor, Currently a little slow at 5
+  myStepper.setSpeed(8);//Speed of Stepper Motor, Currently a little slow at 5
   Serial.begin(115200); // Initialize Serial (USB to IDE Monitor) at Baud Speed 115200
-  myStepper.step(1000); // Extend Arms about 75%
+  myStepper.step(1023); // Extend Arms about 75%
   delay(500);
-  myStepper.step(1000); //Retract Arms to 0ish
+  myStepper.step(-1023); //Retract Arms to Starting Position
   delay(2000);
+  
 
 //Step 4: Text Example (need a fake "status" printout)
     
@@ -133,8 +138,44 @@ void setup() {
 
 }
 
+void showReadings(int emfValue) {
+    display.clearDisplay();   
+    display.setTextSize(3);
+    display.setTextColor(WHITE);
+    display.setCursor(5,40);
+    display.println("PKE");
+
+    display.setCursor(70,40);
+    display.println(emfValue);
+
+    display.display();
+}
+
 void loop() {
-  testdrawline();      // Draw many lines
+  //testdrawline();      // Draw many lines
+  
+  //The Below SHOULD display the "PKE" (Read: EMF) reading on the screen
+  
+  static int avgValue = 0, emfValue = 0;
+    static long nextCheck = 0, emfSum = 0, iterations = 0;
+
+    emfValue = constrain(analogRead(PIN_ANTENNA), 0, 1023);
+    emfSum += emfValue;
+    iterations++;
+    if (lmillis() - nextCheck >= 0) {
+        avgValue = emfSum / iterations;
+        emfSum = 0;
+        iterations = 0;
+        showReadings(avgValue);
+        nextCheck = lmillis() + CHECK_DELAY;
+    }
+
+
+    display.drawRoundRect(0, 5, 126, 30, 2, WHITE);
+    display.fillRect(5, 10, 120, 23, BLACK);
+    display.fillRect(5, 10, map(emfValue, 0, 1023, 0, 118), 20, WHITE);
+    display.display();
+
 }
 
 
@@ -170,6 +211,12 @@ void testdrawbitmap(void) {
     (display.width()  - LOGO_WIDTH ) / 2,
     (display.height() - LOGO_HEIGHT) / 2,
     logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, 1);
+  display.setCursor(2,2);
+  display.setTextSize(2);
+  display.println("Ghostbusters");
+  display.setTextSize(1);
+  display.setCursor(60,0);
+  display.println("PKE Meter v1.0");
   display.display();
   delay(1000);
 }
