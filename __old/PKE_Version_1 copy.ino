@@ -6,19 +6,18 @@
 
   TODO
     - Implement Button Controls of Stepper Motor
-
+    - Create Scanning Animation/Page
+    - EMF Functionality
     - HARDWARE = Open Step Motor area for air flow / add open vents
-    
+    - ground wire to board for Motor Controller
 
 
 COMPLETE
     - Adjust start up order (Complete)
     - Create GB Logo 16x16 (Complete)
-    - Integrated 9v battery (Completeish)
-    - Create Scanning Animation/Page
-    - EMF Functionality
+    -Integrated 9v battery (Completeish)
     - HARDWARE = solder currently 'taped' connections for more secure power flow (Complete)
-    - ground wire to board for Motor Controller
+    
 
 
 
@@ -33,20 +32,8 @@ COMPLETE
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define BUTTON_PIN 25 //Shouldbe GPIO 21
-#define DEBOUNCE_TIME 50 //Debounce in Milli
-
-//Variables for Button
-int lastSteadyState = LOW;
-int lastFlickerableState = LOW;
-int currentState;
-
-unsigned long lastDebounceTime = 0;
 
 const int stepsPerRevolution = 2048;
-
-const int  baud_rate = 115200;
-
 // ULN2003 Motor Driver Pins
 #define IN1 19
 #define IN2 18
@@ -56,6 +43,7 @@ const int  baud_rate = 115200;
 #define PIN_ANTENNA 27
 #define CHECK_DELAY 1000
 #define lmillis() ((long)millis())
+
 // Initialize Stepper Motor
 Stepper myStepper(stepsPerRevolution, IN1, IN3, IN2, IN4);
 
@@ -105,10 +93,6 @@ static const unsigned char PROGMEM logo_bmp[] =
 
 
 void setup() {
-  
-  Serial.begin(115200);
-
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   pinMode(PIN_ANTENNA, INPUT);
     //Step 1: Screen voltage loop
@@ -119,15 +103,32 @@ void setup() {
   };
 
 //Step 2: Display Adafruit and Ghostbusters Logo
-  //display.display();//Should display Adafruit Industries Logo
-  //delay(2000); // Pause for 2 seconds
+  display.display();//Should display Adafruit Industries Logo
+  delay(2000); // Pause for 2 seconds
 
   // Clear the buffer
   display.clearDisplay();
   
   //Draw GB Logo Bitmap
-  //testdrawbitmap();
-  boot_anim_Heading(baud_rate);
+  testdrawbitmap();
+  delay(2000);
+
+
+
+//Step 3: Test PKE Wings (Up a little under half of a full rotation, and then back the same amount)
+  myStepper.setSpeed(8);//Speed of Stepper Motor, Currently a little slow at 5
+  Serial.begin(115200); // Initialize Serial (USB to IDE Monitor) at Baud Speed 115200
+  myStepper.step(1023); // Extend Arms about 75%
+  delay(500);
+  myStepper.step(-1023); //Retract Arms to Starting Position
+  delay(2000);
+  
+
+//Step 4: Text Example (need a fake "status" printout)
+    
+//Step 5: Animation Example of Lines
+
+//Step 6: "Status Update" Text
 
 
 //Step 7 MAIN LOOP: Pre version 2, example animation of main screen with selection info at bottom. Version 2 will have EMF readings instead of example data/loop
@@ -139,46 +140,18 @@ void setup() {
 
 void showReadings(int emfValue) {
     display.clearDisplay();   
-    display.setTextSize(1);
+    display.setTextSize(3);
     display.setTextColor(WHITE);
-    display.setCursor(1,0);
-    display.println("Avg PKE");
-    display.setCursor(1,56);
-    display.println("0-------5---------100");
+    display.setCursor(5,40);
+    display.println("PKE");
 
-    display.setCursor(70,0);
+    display.setCursor(70,40);
     display.println(emfValue);
 
     display.display();
 }
 
 void loop() {
-
-  currentState = digitalRead(BUTTON_PIN);
-
-  if (currentState != lastFlickerableState) {
-    lastDebounceTime = millis();
-    lastFlickerableState = currentState;
-  }
-
-  if ((millis() - lastDebounceTime) > DEBOUNCE_TIME) {
-    
-    if(lastSteadyState == HIGH && currentState == LOW){
-     myStepper.setSpeed(8);
-      Serial.println(F("ButtonPress 1"));
-      myStepper.step(1023);
-    } else if(lastSteadyState == LOW && currentState == HIGH){
-      myStepper.setSpeed(8);
-      Serial.println(F("ButtonPress R"));
-      myStepper.step(-1023);
-
-    }
-   lastSteadyState = currentState;
-  }
-  
-  
-
-
   //testdrawline();      // Draw many lines
   
   //The Below SHOULD display the "PKE" (Read: EMF) reading on the screen
@@ -198,9 +171,9 @@ void loop() {
     }
 
 
-    display.drawRoundRect(0, 20, 128, 37, 2, WHITE);
-    display.fillRect(5, 23, 60, 23, BLACK);
-    display.fillRect(5, 23, map(emfValue, 0, 1023, 0, 58), 20, WHITE);
+    display.drawRoundRect(0, 5, 126, 30, 2, WHITE);
+    display.fillRect(5, 10, 120, 23, BLACK);
+    display.fillRect(5, 10, map(emfValue, 0, 1023, 0, 118), 20, WHITE);
     display.display();
 
 }
@@ -231,94 +204,19 @@ void testdrawline() {
 }
 
 
-void boot_anim_Heading(int BAUDRATE) {
-  
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  heading_print();
-  delay(3000);
-  display.setCursor(1,25);
-  display.println("Ghostbusters LLC");
-  display.setCursor(1,35);
-  display.println("Phone: 555-2368");
-  display.setCursor(1,45);
-  display.println("14 N Moore St");
-  display.setCursor(1,55);
-  display.println("New York City");
-  display.display();
-  delay(7000);
+void testdrawbitmap(void) {
   display.clearDisplay();
-  heading_print();
-  delay(3000);
-  display.setCursor(1,9);
-  display.println("Initialize: Hardware");
-  display.display();
-  delay(1000);
-  display.setCursor(1,20);
-  display.println("SERIAL @ 1152K BAUD..");
-  //display.println("12345123451234512345");
-  display.display();
-  delay(1000);
-  display.setCursor(1,30);
-  myStepper.setSpeed(8);//Speed of Stepper Motor
-  display.println("WING STEP SPEED @ 80%");
-  display.display();
-  delay(1000);
-  display.setCursor(1,40);
-  myStepper.step(1023); //Extend Arms 1023 steps from start
-  delay(3000);
-  
-  display.println("WING TEST EXTEND...OK");
-  display.display();
-  delay(1000);
-  display.setCursor(1,50);
-  myStepper.step(-1023); //retract arms 1023 steps To start
-  display.println("WING TEST RETRACT..OK");
-  display.display();
-  delay(5000);
-  display.clearDisplay();
-  heading_print();
-  delay(3000);
-  display.setCursor(1,9);
-  display.println("Initialize Software");
-  display.display();
-  delay(1000);
-  display.setCursor(1,20);
-  display.println("Load: Tobin Guide.zip");
-  display.display();
-  delay(1000);
-  display.setCursor(1,30);
-  display.println("Load: PKE_RANGE_1.zip");
-  display.display();
-  delay(1000);
-  display.setCursor(1,40);
-  display.println("Load: FARM_UPDATE.zip");
-  display.display();
-  delay(1000);
-  display.setCursor(1,50);
-  display.println("Load: CLASS_CHART.zip");
-  display.display();
-  delay(5000);
-  display.clearDisplay();
-  delay(1000);
 
   display.drawBitmap(
     (display.width()  - LOGO_WIDTH ) / 2,
     (display.height() - LOGO_HEIGHT) / 2,
     logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, 1);
+  display.setCursor(2,2);
+  display.setTextSize(2);
+  display.println("Ghostbusters");
+  display.setTextSize(1);
+  display.setCursor(60,0);
+  display.println("PKE Meter v1.0");
   display.display();
   delay(1000);
-  //display.clearDisplay();
-  display.setCursor(1,50);
-  display.println("Happy Bustin!!!");
-  display.display();
-  delay(2000);
-  display.clearDisplay();
-
-}
-
-void heading_print(){
-  display.setCursor(1,0);
-  display.println("GhostOS v2 (c) 1989");
-  display.display();
 }
